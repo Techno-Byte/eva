@@ -71,3 +71,20 @@ class ErrorHandlingRayTests(unittest.TestCase):
 
         time.sleep(3)
         self.assertFalse(is_ray_stage_running())
+
+    def test_ray_error_populate_to_all_stages_for_fine_grained_toxicity_classifier(self):
+        create_udf_query = """CREATE UDF IF NOT EXISTS FineGrainedToxicityClassifier
+                  INPUT  (text NDARRAY STR(100))
+                  OUTPUT (labels NDARRAY STR(10))
+                  TYPE  Classification
+                  IMPL  'eva/udfs/fine_grained_toxicity_classifier.py';
+        """
+        execute_query_fetch_all(create_udf_query)
+
+        select_query = """SELECT FineGrainedToxicityClassifier(data) FROM testRayErrorHandling;"""
+
+        with self.assertRaises(ExecutorError):
+            _ = execute_query_fetch_all(select_query)
+
+        time.sleep(3)
+        self.assertFalse(is_ray_stage_running())
